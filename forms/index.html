@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чек-лист перед интеграцией с Экзамус</title>
+    <style>
+        /* Общие стили */
+
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #1a73e8;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Контейнер страницы */
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Стили для формы */
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        select, input[type="radio"] {
+            margin: 10px 0;
+        }
+
+        select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        /* Кнопка отправки */
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #1a73e8;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #155bb5;
+        }
+
+        /* Секция результатов */
+        .result {
+            padding: 20px;
+            background-color: #f1f5fe;
+            border-radius: 10px;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        ul {
+            list-style: square inside;
+        }
+
+        a {
+            color: #1a73e8;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Стили для адаптации */
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+
+            h2 {
+                font-size: 1.2rem;
+            }
+
+            button {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Давайте выясним, возможна ли интеграция</h1>
+        <form id="integration-form">
+            <!-- Вопрос №1 -->
+            <h2>Выберите вашу платформу из списка:</h2>
+            <select id="platform" required>
+                <option value="" disabled selected>---</option>
+                <option value="customSystem">Самописная система</option>
+                <option value="customSystem">Другая система, которой нет в списке</option>
+                <option value="startExam">Moodle</option>
+                <option value="moodle">StartExam</option>
+                <option value="indigo">INDIGO</option>
+                <option value="teachbase">Teachbase</option>
+                <option value="websoft">Websoft</option>
+                <option value="edpro">EdPro</option>
+                <option value="mmis">Шахтинская LMS</option>
+                <option value="ecopsy">Экопси</option>
+            </select>
+
+            <!-- Вопрос №2 -->
+            <div id="iframe-question" class="hidden">
+                <h2>Разрешает ли ваша система встраивание в iframe?</h2>
+                <input type="radio" id="iframe-yes" name="iframe" value="yes" required>
+                <label for="iframe-yes">Да, встраивание разрешено</label><br>
+                <input type="radio" id="iframe-no" name="iframe" value="no">
+                <label for="iframe-no">Нет, встраивание запрещено</label><br>
+                <input type="radio" id="iframe-dontknow" name="iframe" value="dontknow">
+                <label for="iframe-dontknow">Я не знаю / Нужна помощь</label>
+            </div>
+
+            <input type="text" id="urlInput" placeholder="Введите URL" />
+            <button id="checkButton">Проверить и встроить</button>
+            <div id="iframe-container">
+                <iframe id="iframe" width="800" height="500"></iframe>
+            </div>
+            <div id="message"></div>
+
+            <!-- Вопрос №3 -->
+            <div id="cookie-question" class="hidden">
+
+                <h2>Разрешены ли cookie secure (SameSite = None, Secure = True)?</h2>
+                <input type="radio" id="cookie-yes" name="cookie" value="yes" required>
+                <label for="cookie-yes">Да, атрибуты разрешены</label><br>
+                <input type="radio" id="cookie-no" name="cookie" value="no">
+                <label for="cookie-no">Нет</label><br>
+                <input type="radio" id="cookie-dontknow" name="cookie" value="dontknow">
+                <label for="cookie-dontknow">Не знаю</label>
+            </div>
+
+            <button type="submit">Узнать результат</button>
+        </form>
+
+        <!-- Блок результата -->
+        <div id="result" class="hidden result">
+            <h2>Результат</h2>
+            <div id="integration-type"></div>
+            <div id="application-type"></div>
+            <div id="actions" class="hidden">
+                <p>Требуются действия!</p>
+                <ul id="suggestions"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+        const input = document.getElementById('urlInput');
+            const checkLink = document.getElementById('checkLink');
+            input.addEventListener('input', () => {
+                const url = input.value;
+                checkLink.href = `https://iframetester.com/?url=${encodeURIComponent(url)}`;
+        const platform = document.getElementById("platform");
+        const iframeQuestion = document.getElementById("iframe-question");
+        const cookieQuestion = document.getElementById("cookie-question");
+        const form = document.getElementById("integration-form");
+        const result = document.getElementById("result");
+        const integrationType = document.getElementById("integration-type");
+        const applicationType = document.getElementById("application-type");
+        const actions = document.getElementById("actions");
+        const suggestions = document.getElementById("suggestions");
+
+        platform.addEventListener("change", () => {
+            if (platform.value === "customSystem") {
+                iframeQuestion.classList.remove("hidden");
+                cookieQuestion.classList.remove("hidden");
+            } else {
+                iframeQuestion.classList.add("hidden");
+                cookieQuestion.classList.add("hidden");
+                result.classList.remove("hidden");
+                integrationType.innerHTML = "Тип интеграции: <b>Да</b>";
+                applicationType.innerHTML = "Возможно интегрировать систему с выбранной платформой.";
+                actions.classList.add("hidden");
+            }
+        });
+
+        // Обработка формы
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            // Проверка ответов
+            const iframeValue = document.querySelector('input[name="iframe"]:checked').value;
+            const cookieValue = document.querySelector('input[name="cookie"]:checked').value;
+            result.classList.remove("hidden");
+
+            integrationType.innerHTML = "Тип интеграции: <ul><li>Через API</li><li>Через генерацию ссылок</li></ul>";
+            applicationType.innerHTML = 
+                "Тип клиентского приложения: <ul><li>Защищённый браузер для рабочего стола</li><li>Мобильное приложение</li><li>Веб-приложение с открытием в новой вкладке</li></ul>";
+
+            // Действия
+            suggestions.innerHTML = "";
+
+            if (iframeValue === "no" || iframeValue === "dontknow") {
+                suggestions.innerHTML += 
+                    `<li>Для бесшовной работы через браузер требуется разрешить встраивание в iframe (<a href="#">как это сделать?</a>)</li>`;
+                actions.classList.remove("hidden");
+            }
+
+            if (cookieValue === "no" || cookieValue === "dontknow") {
+                suggestions.innerHTML += 
+                    `<li>Для корректной работы требуется разрешить cookie secure атрибуты (<a href="#">как это сделать?</a>)</li>`;
+                actions.classList.remove("hidden");
+            }
+        });
+            // Получаем элемент input и ссылку
+    const urlInput = document.getElementById("urlInput");
+    const iframeTestLink = document.getElementById("iframeTestLink");
+
+    // Добавляем обработчик события для изменения ссылки
+    urlInput.addEventListener("input", function() {
+        // Кодируем введённый URL и обновляем ссылку
+        const encodedUrl = encodeURIComponent(urlInput.value);
+        iframeTestLink.href = "https://iframetester.com/?url=" + encodedUrl;
+    });
+    }
+    
+</script>
+</body>
+</html>
